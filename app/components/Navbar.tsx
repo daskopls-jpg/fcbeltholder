@@ -16,26 +16,36 @@ export default function Navbar() {
   const { data: session } = useSession();
 
   return (
-    <nav className="bg-gray-900 text-white px-6 py-3 flex gap-6 items-center shadow-md">
-      <span className="font-bold text-lg mr-4">FC Belt</span>
-      {links.map(({ href, label }) => (
-        <Link
-          key={href}
-          href={href}
-          className={`text-sm font-medium hover:text-green-400 transition-colors ${
-            pathname === href ? 'text-green-400 underline underline-offset-4' : 'text-gray-300'
-          }`}
-        >
-          {label}
-        </Link>
-      ))}
-      <div className="ml-auto flex items-center gap-3">
+    <nav className="sticky top-0 z-50 px-4 py-3">
+      <div className="section-shell glass-panel rounded-2xl px-4 py-3 md:px-6 md:py-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-[#00d1b2] to-[#00f5d4]" />
+          <span className="font-semibold text-lg tracking-wide">FC Belt</span>
+        </div>
+
+        <div className="flex flex-wrap gap-2 md:gap-3 md:ml-2">
+          {links.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`px-3 py-1.5 text-sm rounded-full border transition ${
+                pathname === href
+                  ? 'bg-white/10 border-white/25 text-white'
+                  : 'border-transparent text-slate-300 hover:text-white hover:border-white/20 hover:bg-white/5'
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="md:ml-auto flex items-center gap-3">
         {session ? (
           <>
-            <span className="text-sm text-gray-400">{session.user?.name}</span>
+            <span className="status-chip">{session.user?.name || 'Admin'}</span>
             <button
               onClick={() => signOut()}
-              className="text-sm bg-red-600 hover:bg-red-700 px-3 py-1 rounded font-medium"
+              className="px-3 py-1.5 text-sm rounded-lg bg-[var(--danger)] text-white font-semibold hover:brightness-105"
             >
               Déconnexion
             </button>
@@ -43,11 +53,12 @@ export default function Navbar() {
         ) : (
           <Link
             href="/login"
-            className="text-sm bg-green-600 hover:bg-green-700 px-3 py-1 rounded font-medium"
+            className="brand-btn text-sm px-3 py-1.5"
           >
             Connexion
           </Link>
         )}
+        </div>
       </div>
     </nav>
   );

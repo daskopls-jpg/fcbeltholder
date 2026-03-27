@@ -32,41 +32,42 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-md p-8 w-full max-w-sm">
-        <h1 className="text-2xl font-bold mb-6 text-center">Connexion</h1>
+    <main className="min-h-screen px-4 flex items-center justify-center">
+      <div className="glass-panel rounded-2xl p-8 w-full max-w-sm">
+        <p className="status-chip mx-auto w-fit mb-4">Espace Administration</p>
+        <h1 className="text-3xl font-bold mb-6 text-center">Connexion</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Nom d'utilisateur</label>
+            <label className="block text-sm font-medium mb-1 text-slate-200">Nom d'utilisateur</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+              className="surface-input"
               required
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Mot de passe</label>
+            <label className="block text-sm font-medium mb-1 text-slate-200">Mot de passe</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+              className="surface-input"
               required
             />
           </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-rose-300 text-sm">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded disabled:opacity-50"
+            className="brand-btn w-full py-2.5 disabled:opacity-50"
           >
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
       </div>
-    </div>
+    </main>
   );
 }
