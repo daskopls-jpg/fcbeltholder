@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 
 const links = [
-  { href: '/', label: 'Accueil' },
   { href: '/tournaments', label: 'Tournois' },
   { href: '/belt-holder', label: 'Ceinture' },
   { href: '/tier-list', label: 'Tier List' },
@@ -19,8 +19,16 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 px-4 py-3">
       <div className="section-shell glass-panel rounded-2xl px-4 py-3 md:px-6 md:py-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
         <div className="flex items-center gap-2 shrink-0">
-          <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-[#00d1b2] to-[#00f5d4]" />
-          <span className="font-semibold text-lg tracking-wide">FC Belt</span>
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <Image
+              src="/icon-optimized.png"
+              alt="FC Belt"
+              width={36}
+              height={36}
+              priority
+            />
+            <span className="font-semibold text-lg tracking-wide">Détenteur de ceintures FC</span>
+          </Link>
         </div>
 
         <div className="flex flex-wrap gap-2 md:gap-3 md:ml-2">

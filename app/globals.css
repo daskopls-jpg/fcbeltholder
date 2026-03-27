@@ -1,16 +1,52 @@
 @import "tailwindcss";
 
+/* ============================================
+   DESIGN SYSTEM - COLOR PALETTE
+   ============================================ */
 :root {
+  /* Background */
   --bg: #070d18;
   --bg-soft: #0f1a2b;
+  --bg-hover: #0d1623;
+  
+  /* Surfaces */
   --surface: rgba(17, 31, 51, 0.75);
   --surface-strong: #10243d;
+  --surface-hover: rgba(17, 31, 51, 0.95);
+  
+  /* Text */
   --text: #f4f8ff;
-  --muted: #a5b4cc;
+  --text-secondary: #a5b4cc;
+  --text-tertiary: #7a8ca8;
+  --text-muted: #516278;
+  
+  /* Brand Colors */
   --brand: #00d1b2;
   --brand-strong: #00f5d4;
-  --line: rgba(190, 224, 255, 0.22);
+  --brand-hover: #00e8c7;
+  
+  /* Status Colors */
   --danger: #ff5d7b;
+  --danger-light: #ff8fa3;
+  --success: #1ac96d;
+  --warning: #ffa500;
+  --info: #2d7eff;
+  
+  /* Borders */
+  --line: rgba(190, 224, 255, 0.22);
+  --line-light: rgba(190, 224, 255, 0.12);
+  --line-strong: rgba(190, 224, 255, 0.36);
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 24px 54px rgba(0, 0, 0, 0.34);
+  --shadow-glow: 0 10px 28px rgba(0, 245, 212, 0.28);
+  
+  /* Transitions */
+  --transition-fast: 120ms ease;
+  --transition-base: 180ms ease;
+  --transition-slow: 300ms ease;
 }
 
 @theme inline {
@@ -24,6 +60,13 @@
   box-sizing: border-box;
 }
 
+/* ============================================
+   BASE STYLES
+   ============================================ */
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   min-height: 100vh;
   background:
@@ -32,78 +75,397 @@ body {
     radial-gradient(circle at 50% 100%, rgba(0, 245, 212, 0.12), transparent 38%),
     linear-gradient(170deg, #050b15 0%, #0a1422 55%, #081325 100%);
   color: var(--text);
-  font-family: var(--font-body), "Segoe UI", sans-serif;
+  font-family: var(--font-body), "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-h1,
-h2,
-h3,
-h4 {
-  font-family: var(--font-heading), "Segoe UI", sans-serif;
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), "Segoe UI", system-ui, sans-serif;
   letter-spacing: 0.01em;
+  font-weight: 600;
+  color: var(--text);
+}
+
+h1 {
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+}
+
+h3 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+}
+
+h4 {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+}
+
+p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+a {
+  color: var(--brand);
+  text-decoration: none;
+  transition: color var(--transition-base);
+}
+
+a:hover {
+  color: var(--brand-strong);
+}
+
+/* ============================================
+   LAYOUT UTILITIES
+   ============================================ */
+.section-shell {
+  max-width: 1200px;
+  margin-inline: auto;
 }
 
 .glass-panel {
   background: var(--surface);
   border: 1px solid var(--line);
   backdrop-filter: blur(14px);
-  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.34);
+  box-shadow: var(--shadow-lg);
+  transition: all var(--transition-base);
 }
 
-.section-shell {
-  max-width: 1200px;
-  margin-inline: auto;
+.glass-panel:hover {
+  background: var(--surface-hover);
+  border-color: var(--line-strong);
 }
 
+/* Alternative glass panel with more opacity */
+.glass-panel-dark {
+  background: rgba(7, 13, 24, 0.6);
+  border: 1px solid var(--line-light);
+  backdrop-filter: blur(8px);
+}
+
+/* ============================================
+   BUTTON STYLES
+   ============================================ */
 .brand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   background: linear-gradient(120deg, var(--brand) 0%, var(--brand-strong) 100%);
   color: #01211e;
   font-weight: 700;
   border-radius: 0.8rem;
-  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+  border: none;
+  cursor: pointer;
+  transition: transform var(--transition-base), 
+              box-shadow var(--transition-base), 
+              filter var(--transition-base);
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
 }
 
 .brand-btn:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.03);
-  box-shadow: 0 10px 28px rgba(0, 245, 212, 0.28);
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow: var(--shadow-glow);
+}
+
+.brand-btn:active {
+  transform: translateY(0);
+  filter: brightness(1.00);
+}
+
+.brand-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .outline-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   border: 1px solid var(--line);
   color: var(--text);
   border-radius: 0.8rem;
-  transition: background-color 180ms ease, border-color 180ms ease;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--transition-base), 
+              border-color var(--transition-base),
+              color var(--transition-base);
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .outline-btn:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(190, 224, 255, 0.36);
+  border-color: var(--line-strong);
+  color: var(--text);
 }
 
+.outline-btn:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.outline-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Secondary button style */
+.secondary-btn {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.secondary-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--line-strong);
+}
+
+/* ============================================
+   STATUS CHIP & BADGES
+   ============================================ */
 .status-chip {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   border-radius: 999px;
-  padding: 0.24rem 0.68rem;
+  padding: 0.375rem 0.875rem;
   border: 1px solid var(--line);
-  color: var(--muted);
+  color: var(--text-secondary);
+  background: rgba(17, 31, 51, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all var(--transition-base);
 }
 
+.status-chip:hover {
+  border-color: var(--line-strong);
+  background: rgba(17, 31, 51, 0.8);
+}
+
+.badge-success {
+  background: rgba(26, 201, 109, 0.2);
+  border-color: rgba(26, 201, 109, 0.4);
+  color: var(--success);
+}
+
+.badge-danger {
+  background: rgba(255, 93, 123, 0.2);
+  border-color: rgba(255, 93, 123, 0.4);
+  color: var(--danger);
+}
+
+.badge-warning {
+  background: rgba(255, 165, 0, 0.2);
+  border-color: rgba(255, 165, 0, 0.4);
+  color: var(--warning);
+}
+
+.badge-info {
+  background: rgba(45, 126, 255, 0.2);
+  border-color: rgba(45, 126, 255, 0.4);
+  color: var(--info);
+}
+
+/* ============================================
+   FORM ELEMENTS
+   ============================================ */
 .surface-input {
   width: 100%;
   border: 1px solid var(--line);
   background: rgba(4, 11, 22, 0.65);
   color: var(--text);
   border-radius: 0.75rem;
-  padding: 0.56rem 0.78rem;
+  padding: 0.625rem 0.875rem;
   outline: none;
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: border-color var(--transition-base), 
+              box-shadow var(--transition-base),
+              background-color var(--transition-base);
+}
+
+.surface-input::placeholder {
+  color: var(--text-muted);
 }
 
 .surface-input:focus {
   border-color: var(--brand);
   box-shadow: 0 0 0 3px rgba(0, 209, 178, 0.2);
+  background: rgba(4, 11, 22, 0.85);
+}
+
+.surface-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: rgba(4, 11, 22, 0.4);
+}
+
+/* Textarea */
+textarea.surface-input {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+/* Select dropdown */
+select.surface-input {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a5b4cc' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.5rem;
+}
+
+/* ============================================
+   CARDS & CONTAINERS
+   ============================================ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: all var(--transition-base);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.card-compact {
+  padding: 1rem;
+  border-radius: 0.75rem;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.text-primary {
+  color: var(--text);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-tertiary {
+  color: var(--text-tertiary);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-brand {
+  color: var(--brand);
+}
+
+.text-success {
+  color: var(--success);
+}
+
+.text-danger {
+  color: var(--danger);
+}
+
+.text-warning {
+  color: var(--warning);
+}
+
+.text-info {
+  color: var(--info);
+}
+
+.bg-surface {
+  background-color: var(--surface);
+}
+
+.border-line {
+  border-color: var(--line);
+}
+
+.border-line-light {
+  border-color: var(--line-light);
+}
+
+.border-line-strong {
+  border-color: var(--line-strong);
+}
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line), transparent);
+}
+
+.divider-vertical {
+  width: 1px;
+  background: linear-gradient(180deg, transparent, var(--line), transparent);
+}
+
+/* Focus state utility */
+.focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: outline var(--transition-base);
+}
+
+.focus-ring:focus {
+  outline-color: var(--brand);
+}
+
+/* Loading state */
+.loading {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Smooth transitions */
+.transition-smooth {
+  transition: all var(--transition-base);
+}
+
+.transition-fast {
+  transition: all var(--transition-fast);
+}
+
+.transition-slow {
+  transition: all var(--transition-slow);
 }

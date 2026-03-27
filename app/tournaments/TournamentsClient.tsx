@@ -8,8 +8,6 @@ import {
 } from '../actions/tournaments';
 import type { ITournament } from '../../lib/models/Tournament';
 
-const participantsOptions = ['Maxime', 'Damien'];
-
 const emptyForm = {
   name: '',
   type: 'Minor' as 'Minor' | 'Major',
@@ -36,10 +34,14 @@ export default function TournamentsClient({ initialTournaments }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState(emptyForm);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isPending, startTransition] = useTransition();
-  const sortedTournaments = [...tournaments].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  const sortedTournaments = [...tournaments]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .filter((tournament) => {
+      const query = searchQuery.toLowerCase();
+      return tournament.name.toLowerCase().includes(query);
+    });
 
   const resetForm = () => {
     setFormData(emptyForm);
@@ -77,14 +79,7 @@ export default function TournamentsClient({ initialTournaments }: Props) {
     setShowForm(true);
   };
 
-  const handleParticipantChange = (participant: string, checked: boolean) => {
-    setFormData({
-      ...formData,
-      participants: checked
-        ? [...formData.participants, participant]
-        : formData.participants.filter((p) => p !== participant),
-    });
-  };
+
 
   return (
     <main className="px-4 pb-10 pt-8 md:pt-10">
@@ -105,6 +100,16 @@ export default function TournamentsClient({ initialTournaments }: Props) {
               </button>
             )}
           </div>
+        </div>
+
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Rechercher un tournoi..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="surface-input w-full md:w-80"
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -143,7 +148,7 @@ export default function TournamentsClient({ initialTournaments }: Props) {
               </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-200">Nom du Tournoi</label>
+                  <label className="block text-sm font-medium text-slate-200">Nom du Tournoi <span className="text-red-400">*</span></label>
                   <input
                     type="text"
                     value={formData.name}
@@ -153,7 +158,7 @@ export default function TournamentsClient({ initialTournaments }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-200">Type</label>
+                  <label className="block text-sm font-medium text-slate-200">Type <span className="text-red-400">*</span></label>
                   <select
                     value={formData.type}
                     onChange={(e) =>
@@ -167,7 +172,7 @@ export default function TournamentsClient({ initialTournaments }: Props) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-200">Date</label>
+                  <label className="block text-sm font-medium text-slate-200">Date <span className="text-red-400">*</span></label>
                   <input
                     type="date"
                     value={formData.date}
@@ -177,33 +182,17 @@ export default function TournamentsClient({ initialTournaments }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-200">Gagnant (optionnel)</label>
+                  <label className="block text-sm font-medium text-slate-200">Gagnant</label>
                   <select
                     value={formData.winner}
                     onChange={(e) => setFormData({ ...formData, winner: e.target.value })}
                     className="surface-input mt-1"
                   >
                     <option value="">Sélectionner le gagnant</option>
-                    {formData.participants.map((p) => (
+                    {['Maxime', 'Damien'].map((p) => (
                       <option key={p} value={p}>{p}</option>
                     ))}
                   </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-200">Participants</label>
-                  <div className="mt-1 space-y-2">
-                    {participantsOptions.map((p) => (
-                      <label key={p} className="flex items-center text-sm text-slate-200">
-                        <input
-                          type="checkbox"
-                          checked={formData.participants.includes(p)}
-                          onChange={(e) => handleParticipantChange(p, e.target.checked)}
-                          className="mr-2"
-                        />
-                        {p}
-                      </label>
-                    ))}
-                  </div>
                 </div>
                 <div className="flex justify-end space-x-2">
                   <button

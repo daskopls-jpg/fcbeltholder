@@ -3,14 +3,6 @@ import { create } from 'zustand';
 const initialTeams = [
   'Real Madrid', 'Barcelona', 'Manchester City', 'Liverpool', 'Chelsea',
   'Bayern Munich', 'Borussia Dortmund', 'Paris Saint-Germain', 'Juventus', 'Inter Milan',
-  'AC Milan', 'Atletico Madrid', 'Manchester United', 'Arsenal', 'Tottenham',
-  'Napoli', 'Roma', 'Lazio', 'Fiorentina', 'Ajax',
-  'PSV Eindhoven', 'Feyenoord', 'Benfica', 'Porto', 'Sporting CP',
-  'Sevilla', 'Valencia', 'Villarreal', 'Real Sociedad', 'Athletic Bilbao',
-  'Boca Juniors', 'River Plate', 'Flamengo', 'Palmeiras', 'Sao Paulo',
-  'Corinthians', 'Gremio', 'Internacional', 'Atletico Mineiro', 'Cruzeiro',
-  'Galatasaray', 'Fenerbahce', 'Besiktas', 'Trabzonspor', 'Basaksehir',
-  'Celtic', 'Rangers', 'AZ Alkmaar', 'Vitesse',
 ];
 
 const initialTiers: Record<string, string[]> = {

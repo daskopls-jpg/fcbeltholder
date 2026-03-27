@@ -13,14 +13,6 @@ async function requireAuth() {
 const initialTeams = [
   'Real Madrid', 'Barcelona', 'Manchester City', 'Liverpool', 'Chelsea',
   'Bayern Munich', 'Borussia Dortmund', 'Paris Saint-Germain', 'Juventus', 'Inter Milan',
-  'AC Milan', 'Atletico Madrid', 'Manchester United', 'Arsenal', 'Tottenham',
-  'Napoli', 'Roma', 'Lazio', 'Fiorentina', 'Ajax',
-  'PSV Eindhoven', 'Feyenoord', 'Benfica', 'Porto', 'Sporting CP',
-  'Sevilla', 'Valencia', 'Villarreal', 'Real Sociedad', 'Athletic Bilbao',
-  'Boca Juniors', 'River Plate', 'Flamengo', 'Palmeiras', 'Sao Paulo',
-  'Corinthians', 'Gremio', 'Internacional', 'Atletico Mineiro', 'Cruzeiro',
-  'Galatasaray', 'Fenerbahce', 'Besiktas', 'Trabzonspor', 'Basaksehir',
-  'Celtic', 'Rangers', 'AZ Alkmaar', 'Vitesse',
 ];
 
 const defaultTiers: Record<string, string[]> = {
@@ -29,16 +21,38 @@ const defaultTiers: Record<string, string[]> = {
   '6': [], '7': [], '8': [], '9': [], '10': [],
 };
 
+function sanitizeTiers(tiers: Record<string, string[]>): Record<string, string[]> {
+  const cleaned: Record<string, string[]> = {
+    '1': [], '2': [], '3': [], '4': [], '5': [],
+    '6': [], '7': [], '8': [], '9': [], '10': [],
+  };
+
+  const seen = new Set<string>();
+
+  for (let i = 1; i <= 10; i++) {
+    const key = String(i);
+    const teams = Array.isArray(tiers[key]) ? tiers[key] : [];
+    cleaned[key] = teams.filter((team) => {
+      if (typeof team !== 'string' || !team.trim() || seen.has(team)) return false;
+      seen.add(team);
+      return true;
+    });
+  }
+
+  return cleaned;
+}
+
 export async function getTierList(): Promise<Record<string, string[]>> {
   await connectDB();
   const doc = await TierListModel.findOne().lean();
   if (!doc) return defaultTiers;
-  return doc.tiers as Record<string, string[]>;
+  return sanitizeTiers(doc.tiers as Record<string, string[]>);
 }
 
 export async function saveTierList(tiers: Record<string, string[]>): Promise<void> {
   await requireAuth();
   await connectDB();
-  await TierListModel.findOneAndUpdate({}, { tiers }, { upsert: true });
+  const sanitized = sanitizeTiers(tiers);
+  await TierListModel.findOneAndUpdate({}, { tiers: sanitized }, { upsert: true });
   revalidatePath('/tier-list');
 }

@@ -15,8 +15,11 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "FC Belt",
+  title: "Détenteur de ceintures FC",
   description: "Gérez vos tournois, ceintures et tier list FC.",
+  icons: {
+    icon: "/favicon-32.png",
+  },
 };
 
 export default function RootLayout({
