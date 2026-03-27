@@ -43,10 +43,15 @@ function sanitizeTiers(tiers: Record<string, string[]>): Record<string, string[]
 }
 
 export async function getTierList(): Promise<Record<string, string[]>> {
-  await connectDB();
-  const doc = await TierListModel.findOne().lean();
-  if (!doc) return defaultTiers;
-  return sanitizeTiers(doc.tiers as Record<string, string[]>);
+  try {
+    await connectDB();
+    const doc = await TierListModel.findOne().lean();
+    if (!doc) return defaultTiers;
+    return sanitizeTiers(doc.tiers as Record<string, string[]>);
+  } catch (error) {
+    console.error('Failed to load tier list from MongoDB.', error);
+    return defaultTiers;
+  }
 }
 
 export async function saveTierList(tiers: Record<string, string[]>): Promise<void> {
