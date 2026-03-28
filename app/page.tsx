@@ -3,22 +3,22 @@ import Link from "next/link";
 const cards = [
   {
     href: "/tournaments",
-    title: "Historique des Tournois",
+    title: "Historique des tournois",
     description: "Suivez chaque tournoi mineur ou majeur, les participants, les dates et le gagnant.",
   },
   {
     href: "/belt-holder",
-    title: "Détenteur de Ceinture",
+    title: "Détenteurs de ceintures",
     description: "Affichez instantanément les champions actuels et le tournoi où ils ont pris la ceinture.",
   },
   {
     href: "/tier-list",
-    title: "Évaluateur d'Équipes",
+    title: "Tier-list",
     description: "Classez les équipes FC de 1 à 10 avec une tier list en drag-and-drop.",
   },
   {
     href: "/tournament-creator",
-    title: "Créateur de Tournoi",
+    title: "Générateur de tournois",
     description: "Créez un tournoi pas à pas avec bans, draft de 8 équipes et arbre final interactif.",
   },
 ];

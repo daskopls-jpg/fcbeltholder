@@ -15,7 +15,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Détenteur de ceintures FC",
+  title: "Détenteurs de ceintures FC",
   description: "Gérez vos tournois, ceintures et tier list FC.",
   icons: {
     icon: "/favicon-32.png",

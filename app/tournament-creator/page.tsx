@@ -7,7 +7,7 @@ import { getTierList } from '../actions/tierList';
 import TournamentCreatorClient from './TournamentCreatorClient';
 
 export const metadata: Metadata = {
-  title: 'Créateur de Tournoi FC',
+  title: 'Générateur de tournois FC',
   description: 'Créez un tournoi étape par étape avec bans, draft et arbre final.',
 };
 

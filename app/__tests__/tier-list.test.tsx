@@ -1,5 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useSession } from 'next-auth/react';
+import { saveTierList } from '../actions/tierList';
+import TierListClient from '../tier-list/TierListClient';
 
 jest.mock('next-auth/react', () => ({
   useSession: jest.fn(),
@@ -8,8 +11,6 @@ jest.mock('next-auth/react', () => ({
 jest.mock('../actions/tierList', () => ({
   saveTierList: jest.fn(async () => undefined),
 }));
-
-const TierListClient = require('../tier-list/TierListClient').default;
 
 const mockTiers: Record<string, string[]> = {
   '1': ['Real Madrid'],
@@ -24,11 +25,11 @@ const mockTiers: Record<string, string[]> = {
   '10': ['Valencia'],
 };
 
-const { useSession } = require('next-auth/react');
+const mockedUseSession = useSession as jest.Mock;
 
 describe('TierListClient', () => {
   beforeEach(() => {
-    useSession.mockReturnValue({ data: null });
+    mockedUseSession.mockReturnValue({ data: null });
     (global.fetch as jest.MockedFunction<typeof fetch>).mockImplementation(async (input) => {
       const url = String(input);
 
@@ -88,15 +89,35 @@ describe('TierListClient', () => {
     });
 
     it('shows add team button when admin', () => {
-      useSession.mockReturnValue({ data: { user: { name: 'Admin' } } });
+      mockedUseSession.mockReturnValue({ data: { user: { name: 'Admin' } } });
       render(<TierListClient initialTiers={mockTiers} />);
       expect(screen.getByText('+ Ajouter une équipe')).toBeInTheDocument();
+    });
+
+    it('does not show remove buttons when not admin', () => {
+      render(<TierListClient initialTiers={mockTiers} />);
+      expect(screen.queryByRole('button', { name: 'Supprimer Real Madrid' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Remove team', () => {
+    beforeEach(() => {
+      mockedUseSession.mockReturnValue({ data: { user: { name: 'Admin' } } });
+    });
+
+    it('removes a team from the tier list and saves', async () => {
+      render(<TierListClient initialTiers={mockTiers} />);
+
+      await userEvent.click(screen.getByRole('button', { name: 'Supprimer Real Madrid' }));
+
+      expect(screen.queryByText('Real Madrid')).not.toBeInTheDocument();
+      expect(saveTierList).toHaveBeenCalled();
     });
   });
 
   describe('Add team modal', () => {
     beforeEach(() => {
-      useSession.mockReturnValue({ data: { user: { name: 'Admin' } } });
+      mockedUseSession.mockReturnValue({ data: { user: { name: 'Admin' } } });
     });
 
     it('opens modal when add button is clicked', async () => {

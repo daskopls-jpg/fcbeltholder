@@ -1,22 +1,22 @@
 import { NextResponse } from 'next/server';
+import { connectDB } from '@/lib/mongodb';
+import { TeamModel } from '@/lib/models/Team';
+import { consumeRateLimit, getClientIp } from '@/lib/security/rateLimit';
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_CACHE_ENTRIES = 500;
 const logoCache = new Map<string, { logoUrl: string | null; expiresAt: number }>();
 
-interface TheSportsDbTeam {
-  strTeam?: string;
-  strBadge?: string;
-  strTeamBadge?: string;
-  strLogo?: string;
-}
+function setCachedLogo(key: string, logoUrl: string | null): void {
+  if (logoCache.size >= MAX_CACHE_ENTRIES) {
+    const oldestKey = logoCache.keys().next().value;
+    if (oldestKey) logoCache.delete(oldestKey);
+  }
 
-interface TheSportsDbResponse {
-  teams?: TheSportsDbTeam[];
-}
-
-function pickTeamLogo(team?: TheSportsDbTeam): string | null {
-  if (!team) return null;
-  return team.strBadge || team.strTeamBadge || team.strLogo || null;
+  logoCache.set(key, {
+    logoUrl,
+    expiresAt: Date.now() + CACHE_TTL_MS,
+  });
 }
 
 function normalizeText(value: string): string {
@@ -27,12 +27,15 @@ function normalizeText(value: string): string {
     .trim();
 }
 
-function pickBestTeamMatch(teams: TheSportsDbTeam[] | undefined, query: string): TheSportsDbTeam | undefined {
+function pickBestTeamMatch(
+  teams: Array<{ name?: string; logoUrl?: string | null }> | undefined,
+  query: string
+): { name?: string; logoUrl?: string | null } | undefined {
   if (!teams?.length) return undefined;
 
   const normalizedQuery = normalizeText(query);
   const scored = teams.map((team) => {
-    const name = normalizeText(team.strTeam || '');
+    const name = normalizeText(team.name || '');
     let score = 0;
     if (!name) score = 0;
     else if (name === normalizedQuery) score = 100;
@@ -50,7 +53,19 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const nameParam = (url.searchParams.get('name') || '').trim();
 
-  if (!nameParam) {
+  const ip = getClientIp(request);
+  const rl = consumeRateLimit(`team-logo:${ip}`, 80, 60 * 1000);
+  if (rl.limited) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(rl.retryAfterSeconds) },
+      }
+    );
+  }
+
+  if (!nameParam || nameParam.length > 120) {
     return NextResponse.json({ error: 'Missing team name' }, { status: 400 });
   }
 
@@ -61,29 +76,34 @@ export async function GET(request: Request) {
   }
 
   try {
-    const endpoint = `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(nameParam)}`;
-    const response = await fetch(endpoint, { next: { revalidate: 86400 } });
+    await connectDB();
 
-    if (!response.ok) {
-      throw new Error(`SportsDB request failed with ${response.status}`);
+    const escaped = nameParam.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const exact = await TeamModel.findOne({
+      name: { $regex: `^${escaped}$`, $options: 'i' },
+    })
+      .select({ name: 1, logoUrl: 1 })
+      .lean();
+
+    let logoUrl: string | null = exact?.logoUrl || null;
+
+    if (!exact) {
+      const candidates = await TeamModel.find({
+        name: { $regex: escaped, $options: 'i' },
+      })
+        .select({ name: 1, logoUrl: 1 })
+        .limit(30)
+        .lean();
+
+      const bestTeam = pickBestTeamMatch(candidates, nameParam);
+      logoUrl = bestTeam?.logoUrl || null;
     }
 
-
-    const payload = (await response.json()) as TheSportsDbResponse;
-    const bestTeam = pickBestTeamMatch(payload.teams, nameParam);
-    const logoUrl = pickTeamLogo(bestTeam);
-
-    logoCache.set(cacheKey, {
-      logoUrl,
-      expiresAt: Date.now() + CACHE_TTL_MS,
-    });
+    setCachedLogo(cacheKey, logoUrl);
 
     return NextResponse.json({ team: nameParam, logoUrl });
   } catch {
-    logoCache.set(cacheKey, {
-      logoUrl: null,
-      expiresAt: Date.now() + CACHE_TTL_MS,
-    });
+    setCachedLogo(cacheKey, null);
     return NextResponse.json({ team: nameParam, logoUrl: null });
   }
 }

@@ -86,6 +86,7 @@ export async function getTournaments(): Promise<ITournament[]> {
     const docs = await TournamentModel.find()
       .select({ name: 1, type: 1, winner: 1, date: 1, participants: 1 })
       .sort({ date: -1 })
+      .limit(200)
       .lean();
     return docs.map((d) => toClientTournament(d));
   } catch (error) {

@@ -82,7 +82,7 @@ export default async function TournamentDetailPage({
           </article>
           <article className="rounded-xl border border-white/15 bg-black/20 p-3">
             <p className="text-sm text-slate-300">Type</p>
-            <p className="font-semibold text-white">{tournament.type}</p>
+            <p className="font-semibold text-white">{tournament.type === 'Minor' ? 'Mineur' : tournament.type === 'Major' ? 'Majeur' : tournament.type}</p>
           </article>
           <article className="rounded-xl border border-white/15 bg-black/20 p-3 md:col-span-2">
             <p className="text-sm text-slate-300">Participants</p>

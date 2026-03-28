@@ -14,6 +14,20 @@ declare global {
 
 export async function connectDB(): Promise<typeof mongoose> {
   if (global._mongooseConn) return global._mongooseConn;
-  global._mongooseConn = mongoose.connect(MONGODB_URI);
+
+  const shouldAutoSeedTeams = process.env.AUTO_SEED_TEAMS !== 'false';
+
+  global._mongooseConn = mongoose
+    .connect(MONGODB_URI)
+    .then(async (conn) => {
+      // Auto-seed on connect unless explicitly disabled.
+      if (shouldAutoSeedTeams) {
+        const { ensureTeamsSeeded } = await import('./initDb');
+        ensureTeamsSeeded().catch((error) => {
+          console.error('Failed to seed teams:', error);
+        });
+      }
+      return conn;
+    });
   return global._mongooseConn;
 }

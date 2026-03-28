@@ -7,9 +7,9 @@ import { useSession, signOut } from 'next-auth/react';
 
 const links = [
   { href: '/tournaments', label: 'Tournois' },
-  { href: '/belt-holder', label: 'Ceinture' },
-  { href: '/tier-list', label: 'Tier List' },
-  { href: '/tournament-creator', label: 'Créateur' },
+  { href: '/belt-holder', label: 'Ceintures' },
+  { href: '/tier-list', label: 'Tier-list' },
+  { href: '/tournament-creator', label: 'Générateur' },
 ];
 
 export default function Navbar() {
@@ -31,7 +31,7 @@ export default function Navbar() {
               height={36}
               priority
             />
-            <span className="font-semibold text-lg tracking-wide">Détenteur de ceintures FC</span>
+            <span className="font-semibold text-lg tracking-wide">Détenteurs de ceintures FC</span>
           </Link>
         </div>
 

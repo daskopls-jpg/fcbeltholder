@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   useTournamentCreatorStore,
@@ -40,6 +40,8 @@ const draftSequence: DraftOwner[] = [
 export default function TournamentCreatorClient({ tiers }: Props) {
   const [isCoinFlipping, setIsCoinFlipping] = useState(false);
   const [isSavingTournament, startSavingTournament] = useTransition();
+  const [activeTierTooltip, setActiveTierTooltip] = useState<string | null>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
   const {
@@ -243,6 +245,23 @@ export default function TournamentCreatorClient({ tiers }: Props) {
     return true;
   };
 
+  const handleTierLongPress = (tier: string) => {
+    setActiveTierTooltip(tier);
+  };
+
+  const handleTierLongPressStart = (tier: string) => {
+    longPressTimerRef.current = setTimeout(() => {
+      handleTierLongPress(tier);
+    }, 800);
+  };
+
+  const handleTierLongPressEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
   const nextStep = () => {
     if (!canGoNext()) return;
     setStep(Math.min(step + 1, 5));
@@ -336,8 +355,8 @@ export default function TournamentCreatorClient({ tiers }: Props) {
       <section className="section-shell">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="status-chip mb-2">Nouveau module</p>
-            <h1 className="text-3xl md:text-5xl font-bold">Créateur de Tournoi</h1>
+            <p className="status-chip mb-2">Nouveau tournoi</p>
+            <h1 className="text-3xl md:text-5xl font-bold">Générateur de tournois</h1>
             <p className="text-slate-300 mt-2">
               Flux complet en 5 étapes: bans, équipes, pile ou face, draft et arbre final.
             </p>
@@ -433,14 +452,24 @@ export default function TournamentCreatorClient({ tiers }: Props) {
                       title={tierTooltip}
                       onClick={() => {
                         toggleTierBan(tier);
+                        setActiveTierTooltip(null);
                       }}
-                      className={`px-3 py-1.5 rounded-full border text-sm transition ${
+                      onTouchStart={() => handleTierLongPressStart(tier)}
+                      onTouchEnd={handleTierLongPressEnd}
+                      onMouseLeave={() => setActiveTierTooltip(null)}
+                      className={`relative px-3 py-1.5 rounded-full border text-sm transition ${
                         active
                           ? 'border-red-300/70 bg-red-500/20 text-red-100'
                           : 'border-white/20 text-slate-200 hover:bg-white/10'
                       }`}
                     >
                       Tier {tier}
+                      {activeTierTooltip === tier && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 border border-white/20 rounded-lg text-xs text-slate-100 whitespace-nowrap z-10 pointer-events-none">
+                          {tierTooltip}
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-900"></div>
+                        </div>
+                      )}
                     </button>
                   );
                 })}

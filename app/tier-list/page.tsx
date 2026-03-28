@@ -5,8 +5,8 @@ import TierListClient from './TierListClient';
 import { getTierList } from '../actions/tierList';
 
 export const metadata: Metadata = {
-  title: "Évaluateur d'Équipes FC (1-10)",
-  description: 'Classez vos équipes FC de 1 à 10 par glisser-déposer.',
+  title: "Tier-list FC (1-10)",
+  description: 'Classez vos équipes FC de 1 à 10 par glisser-déposer.'
 };
 
 export default async function TierListPage() {

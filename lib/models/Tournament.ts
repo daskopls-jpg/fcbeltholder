@@ -68,6 +68,8 @@ const TournamentSchema = new Schema<ITournament>({
   },
 });
 
+TournamentSchema.index({ date: -1 });
+
 // In dev hot-reload, cached models can keep an outdated enum schema.
 if (models.Tournament) {
   delete models.Tournament;

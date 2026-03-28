@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useCallback, useEffect } from 'react';
+import { useState, useTransition, useCallback, useEffect, type Ref } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useSession } from 'next-auth/react';
@@ -11,25 +11,27 @@ const ItemTypes = {
 };
 
 const tierStyles: Record<number, string> = {
-  1: 'from-emerald-300/30 to-emerald-500/10',
-  2: 'from-teal-300/30 to-teal-500/10',
-  3: 'from-cyan-300/30 to-cyan-500/10',
-  4: 'from-sky-300/30 to-sky-500/10',
-  5: 'from-blue-300/30 to-blue-500/10',
-  6: 'from-indigo-300/30 to-indigo-500/10',
-  7: 'from-violet-300/30 to-violet-500/10',
-  8: 'from-fuchsia-300/30 to-fuchsia-500/10',
-  9: 'from-rose-300/30 to-rose-500/10',
-  10: 'from-amber-300/30 to-amber-500/10',
+  1: 'bg-yellow-400/30',
+  2: 'bg-teal-500/20',
+  3: 'bg-cyan-500/20',
+  4: 'bg-sky-500/20',
+  5: 'bg-blue-500/20',
+  6: 'bg-indigo-500/20',
+  7: 'bg-violet-500/20',
+  8: 'bg-fuchsia-500/20',
+  9: 'bg-rose-500/20',
+  10: 'bg-red-500/20',
 };
 
 interface TeamItemProps {
   team: string;
   tier: number;
   logoUrl: string | null;
+  isAdmin: boolean;
+  onRemoveTeam: (team: string, tier: number) => void;
 }
 
-function TeamItem({ team, tier, logoUrl }: TeamItemProps) {
+function TeamItem({ team, tier, logoUrl, isAdmin, onRemoveTeam }: TeamItemProps) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.TEAM,
     item: { team, tier },
@@ -47,7 +49,7 @@ function TeamItem({ team, tier, logoUrl }: TeamItemProps) {
 
   return (
     <div
-      ref={drag as any}
+      ref={drag as unknown as Ref<HTMLDivElement>}
       className={`p-2.5 bg-white/10 border border-white/15 rounded-lg mb-2 cursor-grab active:cursor-grabbing text-sm transition flex items-center gap-2 ${
         isDragging ? 'opacity-50 scale-[1.02]' : 'hover:bg-white/15'
       }`}
@@ -65,6 +67,17 @@ function TeamItem({ team, tier, logoUrl }: TeamItemProps) {
         </div>
       )}
       <span>{team}</span>
+      {isAdmin && (
+        <button
+          type="button"
+          onClick={() => onRemoveTeam(team, tier)}
+          className="ml-auto h-7 w-7 rounded border border-red-300/30 text-red-100 hover:bg-red-500/20 inline-flex items-center justify-center"
+          aria-label={`Supprimer ${team}`}
+          title={`Supprimer ${team}`}
+        >
+          x
+        </button>
+      )}
     </div>
   );
 }
@@ -74,10 +87,11 @@ interface TierColumnProps {
   teams: string[];
   teamLogos: Record<string, string | null>;
   moveTeam: (team: string, fromTier: number, toTier: number) => void;
+  removeTeam: (team: string, tier: number) => void;
   isAdmin: boolean;
 }
 
-function TierColumn({ tier, teams, teamLogos, moveTeam, isAdmin }: TierColumnProps) {
+function TierColumn({ tier, teams, teamLogos, moveTeam, removeTeam, isAdmin }: TierColumnProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: ItemTypes.TEAM,
     canDrop: () => isAdmin,
@@ -93,14 +107,21 @@ function TierColumn({ tier, teams, teamLogos, moveTeam, isAdmin }: TierColumnPro
 
   return (
     <div
-      ref={drop as any}
-      className={`p-2.5 rounded-xl border min-h-[120px] bg-gradient-to-b ${tierStyles[tier]} ${
+      ref={drop as unknown as Ref<HTMLDivElement>}
+      className={`p-2.5 rounded-xl border min-h-[120px] ${tierStyles[tier]} ${
         isOver ? 'border-cyan-300/70 shadow-[0_0_0_2px_rgba(103,232,249,0.25)]' : 'border-white/20'
       }`}
     >
       <h2 className="text-base font-semibold mb-3 text-center">Tier {tier}</h2>
       {teams.map((team, idx) => (
-        <TeamItem key={`${tier}-${team}-${idx}`} team={team} tier={tier} logoUrl={teamLogos[team] ?? null} />
+        <TeamItem
+          key={`${tier}-${team}-${idx}`}
+          team={team}
+          tier={tier}
+          logoUrl={teamLogos[team] ?? null}
+          isAdmin={isAdmin}
+          onRemoveTeam={removeTeam}
+        />
       ))}
     </div>
   );
@@ -236,6 +257,19 @@ export default function TierListClient({ initialTiers }: Props) {
     resetAddTeamModal();
   };
 
+  const removeTeam = useCallback((team: string, tier: number) => {
+    if (!isAdmin) return;
+
+    const key = String(tier);
+    const next = {
+      ...tiers,
+      [key]: tiers[key].filter((candidate) => candidate !== team),
+    };
+
+    setTiers(next);
+    startTransition(() => saveTierList(next));
+  }, [tiers, isAdmin]);
+
   return (
     <main className="px-4 pb-10 pt-8 md:pt-10">
       <section className="section-shell">
@@ -341,6 +375,7 @@ export default function TierListClient({ initialTiers }: Props) {
                 teams={teams}
                 teamLogos={teamLogos}
                 moveTeam={moveTeam}
+                removeTeam={removeTeam}
                 isAdmin={isAdmin}
               />
             ))}

@@ -49,7 +49,7 @@ export default function TournamentsClient({ initialTournaments }: Props) {
       <section className="section-shell">
         <div className="flex flex-wrap items-end justify-between gap-3 mb-7">
           <div>
-            <p className="status-chip mb-2">Base De Matchs</p>
+            <p className="status-chip mb-2">Tournois</p>
             <h1 className="text-4xl md:text-5xl font-bold">Historique des Tournois</h1>
           </div>
         </div>
