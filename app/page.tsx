@@ -16,13 +16,18 @@ const cards = [
     title: "Évaluateur d'Équipes",
     description: "Classez les équipes FC de 1 à 10 avec une tier list en drag-and-drop.",
   },
+  {
+    href: "/tournament-creator",
+    title: "Créateur de Tournoi",
+    description: "Créez un tournoi pas à pas avec bans, draft de 8 équipes et arbre final interactif.",
+  },
 ];
 
 export default function Home() {
   return (
     <main className="px-4 pb-12 pt-8 md:pt-14">
       <section className="section-shell">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-8">
           {cards.map((card) => (
             <Link
               key={card.href}

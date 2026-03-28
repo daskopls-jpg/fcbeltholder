@@ -67,17 +67,37 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body {
+  min-height: 100%;
+}
+
 body {
   min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  position: relative;
+  font-family: var(--font-body), "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
   background:
     radial-gradient(circle at 15% 15%, rgba(0, 209, 178, 0.2), transparent 36%),
     radial-gradient(circle at 85% 18%, rgba(45, 126, 255, 0.18), transparent 34%),
     radial-gradient(circle at 50% 100%, rgba(0, 245, 212, 0.12), transparent 38%),
     linear-gradient(170deg, #050b15 0%, #0a1422 55%, #081325 100%);
-  color: var(--text);
-  font-family: var(--font-body), "Segoe UI", system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* ============================================
@@ -123,10 +143,21 @@ a {
   color: var(--brand);
   text-decoration: none;
   transition: color var(--transition-base);
+  cursor: pointer;
 }
 
 a:hover {
   color: var(--brand-strong);
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
 }
 
 /* ============================================
@@ -328,6 +359,13 @@ a:hover {
   background: rgba(4, 11, 22, 0.4);
 }
 
+/* Date input icon on dark backgrounds */
+.surface-input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.2);
+  opacity: 1;
+  cursor: pointer;
+}
+
 /* Textarea */
 textarea.surface-input {
   min-height: 6rem;
@@ -446,6 +484,110 @@ select.surface-input {
 /* Loading state */
 .loading {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Coin flip visual */
+.coin-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.coin-visual {
+  width: 110px;
+  height: 110px;
+  border-radius: 999px;
+  border: 2px solid rgba(196, 232, 255, 0.38);
+  background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.35), rgba(45, 126, 255, 0.35) 52%, rgba(9, 20, 36, 0.92) 100%);
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  transition: transform 500ms ease, filter 300ms ease;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.coin-visual::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+}
+
+.coin-visual::after {
+  content: '';
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  top: 12px;
+  left: 16px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.coin-visual:hover:not(:disabled) {
+  transform: rotateY(18deg);
+  filter: brightness(1.07);
+}
+
+.coin-visual.is-face {
+  transform: rotateY(180deg);
+}
+
+.coin-visual.is-face:hover:not(:disabled) {
+  transform: rotateY(198deg);
+}
+
+.coin-visual:disabled {
+  cursor: wait;
+}
+
+.coin-visual.is-flipping {
+  animation: coin-spin 1.5s cubic-bezier(0.2, 0.75, 0.15, 1) forwards;
+}
+
+.coin-pile-side {
+  background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.35), rgba(45, 126, 255, 0.35) 52%, rgba(9, 20, 36, 0.92) 100%);
+}
+
+.coin-face-side {
+  background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.35), rgba(0, 209, 178, 0.4) 52%, rgba(6, 24, 25, 0.92) 100%);
+}
+
+.coin-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #f6fbff;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+  backface-visibility: hidden;
+}
+
+.coin-visual.is-face .coin-label {
+  transform: rotateY(180deg);
+}
+
+@keyframes coin-spin {
+  0% {
+    transform: translateY(0) rotateY(0deg);
+  }
+  35% {
+    transform: translateY(-14px) rotateY(900deg);
+  }
+  70% {
+    transform: translateY(-6px) rotateY(1700deg);
+  }
+  100% {
+    transform: translateY(0) rotateY(2160deg);
+  }
 }
 
 @keyframes pulse {

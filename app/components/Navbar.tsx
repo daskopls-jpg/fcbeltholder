@@ -9,11 +9,15 @@ const links = [
   { href: '/tournaments', label: 'Tournois' },
   { href: '/belt-holder', label: 'Ceinture' },
   { href: '/tier-list', label: 'Tier List' },
+  { href: '/tournament-creator', label: 'Créateur' },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const visibleLinks = session
+    ? links
+    : links.filter((link) => link.href !== '/tournament-creator');
 
   return (
     <nav className="sticky top-0 z-50 px-4 py-3">
@@ -32,7 +36,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex flex-wrap gap-2 md:gap-3 md:ml-2">
-          {links.map(({ href, label }) => (
+          {visibleLinks.map(({ href, label }) => (
             <Link
               key={href}
               href={href}

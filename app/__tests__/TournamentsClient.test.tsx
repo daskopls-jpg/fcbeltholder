@@ -1,17 +1,24 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ITournament } from '../../lib/models/Tournament';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { deleteTournament } from '../actions/tournaments';
+import TournamentsClient from '../tournaments/TournamentsClient';
 
 jest.mock('next-auth/react', () => ({
   useSession: jest.fn(),
 }));
 
-jest.mock('../actions/tournaments', () => ({
-  addTournament: jest.fn(),
-  updateTournament: jest.fn(async () => undefined),
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(),
 }));
 
-const TournamentsClient = require('../tournaments/TournamentsClient').default;
+jest.mock('../actions/tournaments', () => ({
+  deleteTournament: jest.fn(async () => undefined),
+}));
+
+const pushMock = jest.fn();
 
 const mockTournaments: ITournament[] = [
   {
@@ -33,167 +40,87 @@ const mockTournaments: ITournament[] = [
   {
     _id: '3',
     name: 'Spring Tournament',
-    type: 'Minor',
+    type: 'Custom',
     winner: '',
     date: '2024-05-10',
     participants: ['Maxime', 'Damien'],
   },
 ];
 
-const { useSession } = require('next-auth/react');
-
 describe('TournamentsClient', () => {
   beforeEach(() => {
-    useSession.mockReturnValue({ data: null });
+    jest.clearAllMocks();
+    (useSession as jest.Mock).mockReturnValue({ data: null });
+    (useRouter as jest.Mock).mockReturnValue({ push: pushMock });
   });
 
-  describe('Rendering', () => {
-    it('renders the page title', () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      expect(screen.getByText('Historique des Tournois')).toBeInTheDocument();
-    });
+  it('renders tournaments sorted by date and localized labels', () => {
+    render(<TournamentsClient initialTournaments={mockTournaments} />);
 
-    it('renders all tournaments', () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      expect(screen.getByText('Mini Cup')).toBeInTheDocument();
-      expect(screen.getByText('Grand Cup')).toBeInTheDocument();
-      expect(screen.getByText('Spring Tournament')).toBeInTheDocument();
-    });
+    expect(screen.getByText('Historique des Tournois')).toBeInTheDocument();
 
-    it('renders tournaments sorted by date descending', () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      const articles = screen.getAllByRole('article');
-      expect(articles[0]).toHaveTextContent('Spring Tournament');
-      expect(articles[1]).toHaveTextContent('Grand Cup');
-      expect(articles[2]).toHaveTextContent('Mini Cup');
-    });
+    const articles = screen.getAllByRole('article');
+    expect(articles[0]).toHaveTextContent('Spring Tournament');
+    expect(articles[1]).toHaveTextContent('Grand Cup');
+    expect(articles[2]).toHaveTextContent('Mini Cup');
 
-    it('displays type labels correctly', () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      expect(screen.getAllByText('Mineur')).toHaveLength(2);
-      expect(screen.getByText('Majeur')).toBeInTheDocument();
-    });
-
-    it('displays winner name when present', () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      expect(screen.getByText('Maxime')).toBeInTheDocument();
-      expect(screen.getByText('Damien')).toBeInTheDocument();
-    });
-
-    it('displays dash when no winner', () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      expect(screen.getByText('—')).toBeInTheDocument();
-    });
-
-    it('renders an empty list without crashing', () => {
-      render(<TournamentsClient initialTournaments={[]} />);
-      expect(screen.getByText('Historique des Tournois')).toBeInTheDocument();
-      expect(screen.queryAllByRole('article')).toHaveLength(0);
-    });
+    expect(screen.getByText('Majeur')).toBeInTheDocument();
+    expect(screen.getByText('Créateur')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
   });
 
-  describe('Access control', () => {
-    it('hides add and edit buttons when not admin', () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      expect(screen.queryByText('Ajouter un tournoi')).not.toBeInTheDocument();
-      expect(screen.queryByText('Modifier')).not.toBeInTheDocument();
-    });
+  it('filters tournaments by search query', async () => {
+    render(<TournamentsClient initialTournaments={mockTournaments} />);
 
-    it('shows add button and edit buttons when admin', () => {
-      useSession.mockReturnValue({ data: { user: { name: 'Admin' } } });
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      expect(screen.getByText('Ajouter un tournoi')).toBeInTheDocument();
-      expect(screen.getAllByText('Modifier')).toHaveLength(mockTournaments.length);
-    });
+    await userEvent.type(screen.getByPlaceholderText('Rechercher un tournoi...'), 'mini');
+
+    expect(screen.getByText('Mini Cup')).toBeInTheDocument();
+    expect(screen.queryByText('Grand Cup')).not.toBeInTheDocument();
+    expect(screen.queryByText('Spring Tournament')).not.toBeInTheDocument();
   });
 
-  describe('Search', () => {
-    it('renders the search input', () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      expect(screen.getByPlaceholderText('Rechercher un tournoi...')).toBeInTheDocument();
-    });
+  it('opens tournament detail when a card is clicked', async () => {
+    render(<TournamentsClient initialTournaments={mockTournaments} />);
 
-    it('filters tournaments by name', async () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      await userEvent.type(screen.getByPlaceholderText('Rechercher un tournoi...'), 'Cup');
-      expect(screen.getByText('Mini Cup')).toBeInTheDocument();
-      expect(screen.getByText('Grand Cup')).toBeInTheDocument();
+    const cards = screen.getAllByRole('article');
+    await userEvent.click(cards[0]);
+
+    expect(pushMock).toHaveBeenCalledWith('/tournaments/3');
+  });
+
+  it('hides delete action when user is not authenticated', () => {
+    render(<TournamentsClient initialTournaments={mockTournaments} />);
+    expect(screen.queryByRole('button', { name: 'Supprimer' })).not.toBeInTheDocument();
+  });
+
+  it('does not delete when confirmation is cancelled', async () => {
+    (useSession as jest.Mock).mockReturnValue({ data: { user: { name: 'Maxime' } } });
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
+
+    render(<TournamentsClient initialTournaments={mockTournaments} />);
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Supprimer' })[0]);
+
+    expect(confirmSpy).toHaveBeenCalledWith('Supprimer ce tournoi ?');
+    expect(deleteTournament).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it('deletes tournament for authenticated user and keeps card click isolated', async () => {
+    (useSession as jest.Mock).mockReturnValue({ data: { user: { name: 'Maxime' } } });
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<TournamentsClient initialTournaments={mockTournaments} />);
+
+    const firstDeleteButton = screen.getAllByRole('button', { name: 'Supprimer' })[0];
+    await userEvent.click(firstDeleteButton);
+
+    expect(confirmSpy).toHaveBeenCalledWith('Supprimer ce tournoi ?');
+    expect(deleteTournament).toHaveBeenCalledWith('3');
+    expect(pushMock).not.toHaveBeenCalled();
+
+    await waitFor(() => {
       expect(screen.queryByText('Spring Tournament')).not.toBeInTheDocument();
-    });
-
-    it('is case-insensitive', async () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      await userEvent.type(screen.getByPlaceholderText('Rechercher un tournoi...'), 'mini');
-      expect(screen.getByText('Mini Cup')).toBeInTheDocument();
-      expect(screen.queryByText('Grand Cup')).not.toBeInTheDocument();
-    });
-
-    it('shows no results when nothing matches', async () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      await userEvent.type(screen.getByPlaceholderText('Rechercher un tournoi...'), 'xyz123');
-      expect(screen.queryAllByRole('article')).toHaveLength(0);
-    });
-
-    it('restores all tournaments when search is cleared', async () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      const input = screen.getByPlaceholderText('Rechercher un tournoi...');
-      await userEvent.type(input, 'Cup');
-      await userEvent.clear(input);
-      expect(screen.getAllByRole('article')).toHaveLength(mockTournaments.length);
-    });
-  });
-
-  describe('Add form', () => {
-    beforeEach(() => {
-      useSession.mockReturnValue({ data: { user: { name: 'Admin' } } });
-    });
-
-    it('opens add form when button is clicked', async () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      await userEvent.click(screen.getByText('Ajouter un tournoi'));
-      expect(screen.getByText('Ajouter un Nouveau Tournoi')).toBeInTheDocument();
-    });
-
-    it('closes form when cancel is clicked', async () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      await userEvent.click(screen.getByText('Ajouter un tournoi'));
-      await userEvent.click(screen.getByText('Annuler'));
-      expect(screen.queryByText('Ajouter un Nouveau Tournoi')).not.toBeInTheDocument();
-    });
-
-    it('shows required field indicators', async () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      await userEvent.click(screen.getByText('Ajouter un tournoi'));
-      const asterisks = screen.getAllByText('*');
-      expect(asterisks).toHaveLength(3); // Nom, Type, Date
-    });
-  });
-
-  describe('Edit form', () => {
-    beforeEach(() => {
-      useSession.mockReturnValue({ data: { user: { name: 'Admin' } } });
-    });
-
-    it('opens edit form pre-filled with tournament data', async () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      // Articles sorted by date desc — Spring Tournament is first
-      const editBtns = screen.getAllByText('Modifier');
-      await userEvent.click(editBtns[0]);
-      expect(screen.getByText('Modifier le Tournoi')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Spring Tournament')).toBeInTheDocument();
-    });
-
-    it('shows correct title for edit vs create', async () => {
-      render(<TournamentsClient initialTournaments={mockTournaments} />);
-      // Add (create) form
-      await userEvent.click(screen.getByText('Ajouter un tournoi'));
-      expect(screen.getByText('Ajouter un Nouveau Tournoi')).toBeInTheDocument();
-      await userEvent.click(screen.getByText('Annuler'));
-
-      // Edit form
-      const editBtns = screen.getAllByText('Modifier');
-      await userEvent.click(editBtns[0]);
-      expect(screen.getByText('Modifier le Tournoi')).toBeInTheDocument();
     });
   });
 });

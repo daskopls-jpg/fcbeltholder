@@ -39,7 +39,10 @@ export default async function BeltHolder() {
                 <>
                   <h2 className="text-3xl font-semibold mt-3">{data.winner}</h2>
                   <p className="text-slate-300 mt-2">Depuis le {formatDate(data.date)}</p>
-                  <Link href="/tournaments" className="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 block cursor-pointer transition hover:border-white/20 hover:bg-white/10">
+                  <Link
+                    href={data._id ? `/tournaments/${data._id}` : '/tournaments'}
+                    className="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 block cursor-pointer transition hover:border-white/20 hover:bg-white/10"
+                  >
                     <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Tournoi de reference</p>
                     <p className="text-base mt-1">{data.name}</p>
                   </Link>
