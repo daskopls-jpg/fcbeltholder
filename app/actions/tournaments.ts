@@ -41,6 +41,11 @@ function toClientTournament(doc: unknown): ITournament {
         })
       : [];
 
+  const teamsByPlayer = Object.entries(teamsByPlayerRecord).reduce<Record<string, string[]>>((acc, [player, value]) => ({
+    ...acc,
+    [player]: Array.isArray(value) ? value.map(asString) : [],
+  }), {});
+
   return {
     _id: asString(record._id),
     name: asString(record.name),
@@ -60,14 +65,28 @@ function toClientTournament(doc: unknown): ITournament {
             creatorDataRecord.coinWinner === 'Maxime' || creatorDataRecord.coinWinner === 'Damien'
               ? creatorDataRecord.coinWinner
               : null,
-          teamsByPlayer: {
-            Maxime: Array.isArray(teamsByPlayerRecord.Maxime)
-              ? teamsByPlayerRecord.Maxime.map(asString)
-              : [],
-            Damien: Array.isArray(teamsByPlayerRecord.Damien)
-              ? teamsByPlayerRecord.Damien.map(asString)
-              : [],
-          },
+          playerCount:
+            typeof creatorDataRecord.playerCount === 'number'
+              ? (creatorDataRecord.playerCount as 2 | 3)
+              : undefined,
+          players: Array.isArray(creatorDataRecord.players)
+            ? creatorDataRecord.players.map(asString)
+            : undefined,
+          draftOrder: Array.isArray(creatorDataRecord.draftOrder)
+            ? creatorDataRecord.draftOrder.map(asString)
+            : undefined,
+          teamsByPlayer,
+          groupStage: Array.isArray(creatorDataRecord.groupStage)
+            ? creatorDataRecord.groupStage.map((group) => {
+                const g = asRecord(group);
+                return {
+                  name: asString(g.name),
+                  teams: Array.isArray(g.teams) ? g.teams.map(asString) : [],
+                  matches: mapMatchArray(g.matches),
+                };
+              })
+            : undefined,
+          groupScores: asRecord(creatorDataRecord.groupScores) as Record<string, { left: string; right: string }>,
           quarterFinals: mapMatchArray(creatorDataRecord.quarterFinals),
           semiFinals: mapMatchArray(creatorDataRecord.semiFinals),
           final: {

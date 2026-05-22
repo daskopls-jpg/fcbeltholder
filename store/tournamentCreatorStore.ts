@@ -4,16 +4,30 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 export type DraftOwner = 'winner' | 'loser';
 export type PlayerSlot = 'player1' | 'player2';
 
-interface PickedTeam {
+export interface PickedTeam {
   team: string;
   owner: DraftOwner;
 }
 
-interface TournamentCreatorStore {
+export interface GroupMatch {
+  id: string;
+  left: string;
+  right: string;
+  winner: string | null;
+}
+
+export interface GroupStage {
+  name: string;
+  teams: string[];
+  matches: GroupMatch[];
+}
+
+export interface TournamentCreatorStore {
   hasHydrated: boolean;
   step: number;
+  playerCount: 2 | 3 | null;
   tournamentName: string;
-  tournamentType: 'Minor' | 'Major';
+  tournamentType: 'Minor' | 'Major' | 'Ceinture Unifiée';
   date: string;
   bannedTiers: string[];
   selectedTeams: string[];
@@ -25,10 +39,17 @@ interface TournamentCreatorStore {
   quarterWinners: (string | null)[];
   semiWinners: (string | null)[];
   finalWinner: string | null;
+  threeDraftOrder: string[];
+  threePickedTeams: { team: string; player: string }[];
+  threeGroups: GroupStage[] | null;
+  threeGroupScores: Record<string, { left: string; right: string }>;
+  threeSemiWinners: [string | null, string | null];
+  threeFinalWinner: string | null;
   setHasHydrated: (value: boolean) => void;
   setStep: (value: number) => void;
+  setPlayerCount: (value: 2 | 3 | null) => void;
   setTournamentName: (value: string) => void;
-  setTournamentType: (value: 'Minor' | 'Major') => void;
+  setTournamentType: (value: 'Minor' | 'Major' | 'Ceinture Unifiée') => void;
   setDate: (value: string) => void;
   setSelectedTeams: (teams: string[]) => void;
   toggleTierBan: (tier: string) => void;
@@ -43,6 +64,14 @@ interface TournamentCreatorStore {
   chooseQuarterWinner: (matchIndex: number, winner: string) => void;
   chooseSemiWinner: (matchIndex: number, winner: string) => void;
   setFinalWinner: (winner: string | null) => void;
+  setThreeDraftOrder: (order: string[]) => void;
+  setThreePickedTeams: (picks: { team: string; player: string }[]) => void;
+  appendThreePickedTeam: (team: string, player: string) => void;
+  setThreeGroups: (groups: GroupStage[] | null) => void;
+  setThreeGroupScores: (scores: Record<string, { left: string; right: string }>) => void;
+  updateThreeGroupScore: (groupName: string, matchId: string, side: 'left' | 'right', value: string) => void;
+  setThreeSemiWinners: (winners: [string | null, string | null]) => void;
+  setThreeFinalWinner: (winner: string | null) => void;
   resetAll: () => void;
 }
 
@@ -53,6 +82,12 @@ const resetDraftValues = {
   quarterWinners: [null, null, null, null] as (string | null)[],
   semiWinners: [null, null] as (string | null)[],
   finalWinner: null as string | null,
+  threeDraftOrder: [] as string[],
+  threePickedTeams: [] as { team: string; player: string }[],
+  threeGroups: null as GroupStage[] | null,
+  threeGroupScores: {} as Record<string, { left: string; right: string }>,
+  threeSemiWinners: [null, null] as [string | null, string | null],
+  threeFinalWinner: null as string | null,
 };
 
 function getTodayDateInputValue(): string {
@@ -66,8 +101,9 @@ function getTodayDateInputValue(): string {
 function getInitialCreatorState() {
   return {
     step: 1,
+    playerCount: null as 2 | 3 | null,
     tournamentName: '',
-    tournamentType: 'Minor' as 'Minor' | 'Major',
+    tournamentType: 'Minor' as 'Minor' | 'Major' | 'Ceinture Unifiée',
     date: getTodayDateInputValue(),
     bannedTiers: [] as string[],
     selectedTeams: [] as string[],
@@ -84,13 +120,23 @@ export const useTournamentCreatorStore = create<TournamentCreatorStore>()(
       ...getInitialCreatorState(),
       setHasHydrated: (value) => set({ hasHydrated: value }),
       setStep: (value) => set({ step: value }),
+      setPlayerCount: (value) => {
+        set({
+          playerCount: value,
+          selectedTeams: [],
+          coinWinnerSlot: null,
+          coinResultText: '',
+          ...resetDraftValues,
+        });
+      },
       setTournamentName: (value) => set({ tournamentName: value }),
       setTournamentType: (value) => set({ tournamentType: value }),
       setDate: (value) => set({ date: value }),
       setSelectedTeams: (teams) => {
+        const maxSelection = get().playerCount === 3 ? 6 : 8;
         const unique = Array.from(new Set(teams.filter((team) => typeof team === 'string' && team.trim())));
         set({
-          selectedTeams: unique.slice(0, 8),
+          selectedTeams: unique.slice(0, maxSelection),
           coinWinnerSlot: null,
           coinResultText: '',
           ...resetDraftValues,
@@ -108,10 +154,11 @@ export const useTournamentCreatorStore = create<TournamentCreatorStore>()(
       },
       toggleSelectedTeam: (team) => {
         set((state) => {
+          const maxSelection = state.playerCount === 3 ? 6 : 8;
           let nextSelected = state.selectedTeams;
           if (state.selectedTeams.includes(team)) {
             nextSelected = state.selectedTeams.filter((value) => value !== team);
-          } else if (state.selectedTeams.length < 8) {
+          } else if (state.selectedTeams.length < maxSelection) {
             nextSelected = [...state.selectedTeams, team];
           }
 
@@ -196,6 +243,24 @@ export const useTournamentCreatorStore = create<TournamentCreatorStore>()(
         });
       },
       setFinalWinner: (winner) => set({ finalWinner: winner }),
+      setThreeDraftOrder: (order) => set({ threeDraftOrder: order }),
+      setThreePickedTeams: (picks) => set({ threePickedTeams: picks }),
+      appendThreePickedTeam: (team, player) =>
+        set((state) => ({ threePickedTeams: [...state.threePickedTeams, { team, player }] })),
+      setThreeGroups: (groups) => set({ threeGroups: groups }),
+      setThreeGroupScores: (scores) => set({ threeGroupScores: scores }),
+      updateThreeGroupScore: (groupName, matchId, side, value) =>
+        set((state) => ({
+          threeGroupScores: {
+            ...state.threeGroupScores,
+            [`${groupName}-${matchId}`]: {
+              ...state.threeGroupScores[`${groupName}-${matchId}`],
+              [side]: value,
+            },
+          },
+        })),
+      setThreeSemiWinners: (winners) => set({ threeSemiWinners: winners }),
+      setThreeFinalWinner: (winner) => set({ threeFinalWinner: winner }),
       resetAll: () => {
         set({
           ...getInitialCreatorState(),
@@ -224,6 +289,7 @@ export const useTournamentCreatorStore = create<TournamentCreatorStore>()(
       },
       partialize: (state) => ({
         step: state.step,
+        playerCount: state.playerCount,
         tournamentName: state.tournamentName,
         tournamentType: state.tournamentType,
         date: state.date,
@@ -237,6 +303,12 @@ export const useTournamentCreatorStore = create<TournamentCreatorStore>()(
         quarterWinners: state.quarterWinners,
         semiWinners: state.semiWinners,
         finalWinner: state.finalWinner,
+        threeDraftOrder: state.threeDraftOrder,
+        threePickedTeams: state.threePickedTeams,
+        threeGroups: state.threeGroups,
+        threeGroupScores: state.threeGroupScores,
+        threeSemiWinners: state.threeSemiWinners,
+        threeFinalWinner: state.threeFinalWinner,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

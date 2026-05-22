@@ -33,6 +33,7 @@ function resetCreatorStore() {
     useTournamentCreatorStore.setState({
       hasHydrated: true,
       step: 1,
+      playerCount: null,
       tournamentName: '',
       date: '',
       bannedTiers: [],
@@ -58,6 +59,7 @@ describe('TournamentCreatorClient', () => {
     act(() => {
       useTournamentCreatorStore.setState({
         step: 3,
+        playerCount: 2,
         tournamentName: 'Summer Cup',
         date: '2026-03-28',
         bannedTiers: ['1', '2'],
@@ -67,12 +69,13 @@ describe('TournamentCreatorClient', () => {
 
     render(<TournamentCreatorClient tiers={mockTiers} />);
 
-    expect(screen.getByText('Étape 3 / 5')).toBeInTheDocument();
+    expect(screen.getByText('Étape 3 / 6')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Réinitialiser le tournoi' }));
 
-    expect(screen.getByText('Étape 1 / 5')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Ex: Ligue de Printemps')).toHaveValue('');
+    expect(screen.getByText('Étape 1 / 6')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Deux joueurs/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Trois joueurs/i })).toBeInTheDocument();
   });
 
   it('shows a consistent animated coin result and winner text', async () => {
@@ -81,24 +84,27 @@ describe('TournamentCreatorClient', () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
 
     act(() => {
-      useTournamentCreatorStore.setState({ step: 3 });
+      useTournamentCreatorStore.setState({ step: 4, playerCount: 2 });
     });
 
     render(<TournamentCreatorClient tiers={mockTiers} />);
 
-    const launchButton = screen.getByRole('button', { name: 'Lancer la pièce' });
+    const launchButtons = screen.getAllByRole('button', { name: 'Lancer la pièce' });
+    const launchButton = launchButtons[0];
     await user.click(launchButton);
 
-    expect(screen.getByText('La piece tourne...')).toBeInTheDocument();
+    expect(screen.getByText('La pièce tourne...')).toBeInTheDocument();
     expect(screen.getByText('Lancement en cours...')).toBeInTheDocument();
 
     act(() => {
       jest.advanceTimersByTime(1500);
     });
 
-    const coinButton = screen.getByRole('button', { name: 'Lancer la piece' });
+    const coinButtons = screen.getAllByRole('button', { name: 'Lancer la pièce' });
+    const coinButton = coinButtons.find((button) => button.textContent?.trim() === 'Maxime');
 
-    expect(screen.getByText('Resultat actuel: Maxime')).toBeInTheDocument();
+    expect(screen.getByText('Résultat actuel: Maxime')).toBeInTheDocument();
+    expect(coinButton).toBeDefined();
     expect(coinButton).toHaveTextContent('Maxime');
     expect(screen.getByText('Maxime gagne le pile ou face.')).toBeInTheDocument();
     expect(screen.queryByText('Resultat actuel: Damien')).not.toBeInTheDocument();
