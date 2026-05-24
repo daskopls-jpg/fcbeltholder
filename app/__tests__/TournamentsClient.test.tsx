@@ -28,6 +28,7 @@ const mockTournaments: ITournament[] = [
     winner: 'Maxime',
     date: '2024-01-15',
     participants: ['Maxime', 'Damien'],
+    teamsByPlayer: {},
   },
   {
     _id: '2',
@@ -36,6 +37,7 @@ const mockTournaments: ITournament[] = [
     winner: 'Damien',
     date: '2024-03-20',
     participants: ['Maxime', 'Damien'],
+    teamsByPlayer: {},
   },
   {
     _id: '3',
@@ -44,6 +46,7 @@ const mockTournaments: ITournament[] = [
     winner: '',
     date: '2024-05-10',
     participants: ['Maxime', 'Damien'],
+    teamsByPlayer: {},
   },
 ];
 

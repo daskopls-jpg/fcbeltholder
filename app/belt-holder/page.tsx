@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
 import { getTournaments } from '../actions/tournaments';
+import type { ITournament } from '@/lib/models/Tournament';
 
 const formatDate = (dateString: string) =>
   new Date(dateString + 'T00:00:00').toLocaleDateString('fr-FR');
@@ -9,7 +10,7 @@ const formatDate = (dateString: string) =>
 export default async function BeltHolder() {
   const tournaments = await getTournaments();
 
-  const getLatest = (type: 'Minor' | 'Major') => {
+  const getLatest = (type: 'Minor' | 'Major' | 'Ceinture Unifiée') => {
     const relevant = tournaments
       .filter((t) => t.type === type && t.winner)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -18,10 +19,24 @@ export default async function BeltHolder() {
 
   const minor = getLatest('Minor');
   const major = getLatest('Major');
+  const unified = getLatest('Ceinture Unifiée');
+
+  const getDisplayWinner = (tournament: ITournament) => {
+    if (tournament.type === 'Ceinture Unifiée' && tournament.creatorData?.teamsByPlayer) {
+      for (const [player, teams] of Object.entries(tournament.creatorData.teamsByPlayer)) {
+        if (teams.includes(tournament.winner)) {
+          return player;
+        }
+      }
+    }
+
+    return tournament.winner;
+  };
 
   const belts = [
     { key: 'Minor', label: 'Ceinture Mineure', data: minor },
     { key: 'Major', label: 'Ceinture Majeure', data: major },
+    { key: 'Ceinture Unifiée', label: 'Ceinture Unifiée', data: unified },
   ];
 
   return (
@@ -37,7 +52,7 @@ export default async function BeltHolder() {
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{label}</p>
               {data ? (
                 <>
-                  <h2 className="text-3xl font-semibold mt-3">{data.winner}</h2>
+                  <h2 className="text-3xl font-semibold mt-3">{getDisplayWinner(data)}</h2>
                   <p className="text-slate-300 mt-2">Depuis le {formatDate(data.date)}</p>
                   <Link
                     href={data._id ? `/tournaments/${data._id}` : '/tournaments'}

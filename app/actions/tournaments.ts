@@ -24,6 +24,7 @@ function asNullableString(value: unknown): string | null {
 }
 
 function toClientTournament(doc: unknown): ITournament {
+  console.log(doc)
   const record = asRecord(doc);
   const creatorDataRecord = asRecord(record.creatorData);
   const teamsByPlayerRecord = asRecord(creatorDataRecord.teamsByPlayer);
@@ -52,6 +53,7 @@ function toClientTournament(doc: unknown): ITournament {
     type: asString(record.type) as ITournament['type'],
     winner: asString(record.winner ?? ''),
     date: asString(record.date),
+    teamsByPlayer: teamsByPlayer,
     participants: Array.isArray(record.participants) ? record.participants.map(asString) : [],
     creatorData: record.creatorData
       ? {
@@ -103,7 +105,7 @@ export async function getTournaments(): Promise<ITournament[]> {
   try {
     await connectDB();
     const docs = await TournamentModel.find()
-      .select({ name: 1, type: 1, winner: 1, date: 1, participants: 1 })
+      .select({ name: 1, type: 1, winner: 1, date: 1, participants: 1, creatorData: 1 })
       .sort({ date: -1 })
       .limit(200)
       .lean();

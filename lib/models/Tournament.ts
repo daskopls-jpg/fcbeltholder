@@ -31,6 +31,7 @@ export interface ITournament {
   type: 'Minor' | 'Major' | 'Custom' | 'Ceinture Unifiée';
   winner: string;
   date: string;
+  teamsByPlayer: Record<string, string[]>;
   participants: string[];
   creatorData?: TournamentCreatorData;
 }

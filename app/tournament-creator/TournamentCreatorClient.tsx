@@ -600,6 +600,7 @@ export default function TournamentCreatorClient({ tiers }: Props) {
         date,
         winner: tournamentWinner ?? '',
         participants: isThreePlayer ? players : [player1, player2],
+        teamsByPlayer: creatorData.teamsByPlayer,
         creatorData,
       });
 
@@ -1132,17 +1133,17 @@ export default function TournamentCreatorClient({ tiers }: Props) {
                                     : null;
                                 return (
                                   <div key={match.id} className="rounded-xl border border-white/10 p-3 bg-black/20">
-                                    <div className="flex items-center justify-between gap-3">
-                                      <span className={`flex-1 text-right font-semibold ${winnerTeam === match.left ? 'text-emerald-200' : ''}`}>
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                                      <span className={`w-full sm:flex-1 text-center font-semibold break-words whitespace-normal ${winnerTeam === match.left ? 'text-emerald-200' : ''}`}>
                                         {renderTeamWithOwner(match.left, winnerTeam === match.left)}
                                       </span>
-                                      <div className="flex items-center gap-2 shrink-0">
+                                      <div className="w-full sm:w-auto flex justify-center gap-2 items-center">
                                         <input
                                           type="number"
                                           min="0"
                                           value={score.left ?? ''}
                                           onChange={(e) => handleUpdateThreeGroupScore(group.name, match.id, 'left', e.target.value)}
-                                          className="surface-input w-12 min-w-[3rem] text-center text-sm"
+                                          className="surface-input w-28 sm:w-12 min-w-[3.5rem] text-center text-sm px-2 py-1"
                                         />
                                         <span className="text-slate-400">-</span>
                                         <input
@@ -1150,10 +1151,10 @@ export default function TournamentCreatorClient({ tiers }: Props) {
                                           min="0"
                                           value={score.right ?? ''}
                                           onChange={(e) => handleUpdateThreeGroupScore(group.name, match.id, 'right', e.target.value)}
-                                          className="surface-input w-12 min-w-[3rem] text-center text-sm"
+                                          className="surface-input w-28 sm:w-12 min-w-[3.5rem] text-center text-sm px-2 py-1"
                                         />
                                       </div>
-                                      <span className={`flex-1 text-left font-semibold ${winnerTeam === match.right ? 'text-emerald-200' : ''}`}>
+                                      <span className={`w-full sm:flex-1 text-center font-semibold break-words whitespace-normal ${winnerTeam === match.right ? 'text-emerald-200' : ''}`}>
                                         {renderTeamWithOwner(match.right, winnerTeam === match.right)}
                                       </span>
                                     </div>
