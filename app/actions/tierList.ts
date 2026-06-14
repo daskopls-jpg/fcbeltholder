@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import { TierListModel } from '@/lib/models/TierList';
 import { DEFAULT_TIERS } from '@/lib/tiers';
 import { emptyWorldCupTiers, type TierListMode } from '@/lib/worldCup';
+export type { TierListMode } from '@/lib/worldCup';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 

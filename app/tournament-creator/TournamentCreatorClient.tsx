@@ -14,7 +14,7 @@ import { createTournamentFromCreator } from '../actions/tournaments';
 
 interface Props {
   tiers: Record<string, string[]>;
-  initialWorldCupTiers: Record<string, string[]>;
+  initialWorldCupTiers?: Record<string, string[]>;
 }
 
 interface Matchup {
