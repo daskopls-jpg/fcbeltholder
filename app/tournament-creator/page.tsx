@@ -18,5 +18,6 @@ export default async function TournamentCreatorPage() {
   }
 
   const tiers = await getTierList();
-  return <TournamentCreatorClient tiers={tiers} />;
+  const worldCupTiers = await getTierList('worldCup2026');
+  return <TournamentCreatorClient tiers={tiers} initialWorldCupTiers={worldCupTiers} />;
 }

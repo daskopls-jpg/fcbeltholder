@@ -55,6 +55,7 @@ function toClientTournament(doc: unknown): ITournament {
     date: asString(record.date),
     teamsByPlayer: teamsByPlayer,
     participants: Array.isArray(record.participants) ? record.participants.map(asString) : [],
+    isWorldCup2026: record.isWorldCup2026 === true,
     creatorData: record.creatorData
       ? {
           bannedTiers: Array.isArray(creatorDataRecord.bannedTiers)
@@ -105,7 +106,7 @@ export async function getTournaments(): Promise<ITournament[]> {
   try {
     await connectDB();
     const docs = await TournamentModel.find()
-      .select({ name: 1, type: 1, winner: 1, date: 1, participants: 1, creatorData: 1 })
+      .select({ name: 1, type: 1, winner: 1, date: 1, participants: 1, creatorData: 1, isWorldCup2026: 1 })
       .sort({ date: -1 })
       .limit(200)
       .lean();

@@ -8,10 +8,13 @@ import {
   type PlayerSlot,
   type GroupStage,
 } from '@/store/tournamentCreatorStore';
+import { useWorldCupStore } from '@/store/worldCupStore';
+import { emptyWorldCupTiers } from '@/lib/worldCup';
 import { createTournamentFromCreator } from '../actions/tournaments';
 
 interface Props {
   tiers: Record<string, string[]>;
+  initialWorldCupTiers: Record<string, string[]>;
 }
 
 interface Matchup {
@@ -47,7 +50,7 @@ const draftSequence: DraftOwner[] = [
   'winner',
 ];
 
-export default function TournamentCreatorClient({ tiers }: Props) {
+export default function TournamentCreatorClient({ tiers, initialWorldCupTiers }: Props) {
   const [isCoinFlipping, setIsCoinFlipping] = useState(false);
   const [isSavingTournament, startSavingTournament] = useTransition();
   const [activeTierTooltip, setActiveTierTooltip] = useState<string | null>(null);
@@ -85,7 +88,6 @@ export default function TournamentCreatorClient({ tiers }: Props) {
     setSelectedTeams,
     toggleTierBan,
     toggleSelectedTeam,
-    sanitizeSelectionAgainstBans,
     runCoinFlip,
     setCoinWinnerSlot,
     setCoinResultText,
@@ -109,12 +111,16 @@ export default function TournamentCreatorClient({ tiers }: Props) {
   const player1 = 'Maxime';
   const player2 = 'Damien';
 
+  const isWorldCup2026 = useWorldCupStore((state) => state.isWorldCup2026);
+  const worldCupTiers = initialWorldCupTiers;
+  const currentTiers = isWorldCup2026 ? worldCupTiers ?? emptyWorldCupTiers() : tiers;
+
   const tierEntries = useMemo(
     () =>
-      Object.entries(tiers)
+      Object.entries(currentTiers)
         .sort(([a], [b]) => Number(a) - Number(b))
         .map(([tier, teams]) => ({ tier, teams })),
-    [tiers]
+    [currentTiers]
   );
 
   const isThreePlayer = playerCount === 3;
@@ -123,17 +129,17 @@ export default function TournamentCreatorClient({ tiers }: Props) {
   const stepLabels = useMemo(() => getStepLabels(playerCount), [playerCount]);
 
   const bannedTeamList = useMemo(() => {
-    const teams = bannedTiers.flatMap((tier) => tiers[tier] ?? []);
+    const teams = bannedTiers.flatMap((tier) => currentTiers[tier] ?? []);
     return Array.from(new Set(teams)).sort((a, b) => a.localeCompare(b));
-  }, [bannedTiers, tiers]);
+  }, [bannedTiers, currentTiers]);
 
   const eligibleTeams = useMemo(() => {
     const blocked = new Set(bannedTeamList);
-    const pool = Object.values(tiers)
+    const pool = Object.values(currentTiers)
       .flat()
       .filter((team) => !blocked.has(team));
     return Array.from(new Set(pool)).sort((a, b) => a.localeCompare(b));
-  }, [bannedTeamList, tiers]);
+  }, [bannedTeamList, currentTiers]);
 
   const availableForSelection = useMemo(
     () => eligibleTeams.filter((team) => !selectedTeams.includes(team)),
@@ -142,8 +148,10 @@ export default function TournamentCreatorClient({ tiers }: Props) {
 
   useEffect(() => {
     if (!hasHydrated) return;
-    sanitizeSelectionAgainstBans(eligibleTeams);
-  }, [eligibleTeams, hasHydrated, sanitizeSelectionAgainstBans]);
+    const nextSelected = selectedTeams.filter((team) => eligibleTeams.includes(team));
+    if (nextSelected.length === selectedTeams.length) return;
+    setSelectedTeams(nextSelected);
+  }, [eligibleTeams, hasHydrated, selectedTeams, setSelectedTeams]);
 
   useEffect(() => {
     if (!hasHydrated) return;
@@ -602,6 +610,7 @@ export default function TournamentCreatorClient({ tiers }: Props) {
         participants: isThreePlayer ? players : [player1, player2],
         teamsByPlayer: creatorData.teamsByPlayer,
         creatorData,
+        isWorldCup2026: isWorldCup2026,
       });
 
       resetAll();

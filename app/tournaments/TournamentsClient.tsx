@@ -76,7 +76,14 @@ export default function TournamentsClient({ initialTournaments }: Props) {
                   <h2 className="text-2xl font-semibold">{tournament.name}</h2>
                   <p className="text-slate-300 text-sm mt-1">{formatDate(tournament.date)}</p>
                 </div>
-                <span className="status-chip">{formatType(tournament.type)}</span>
+                <div className="flex flex-col items-end gap-2">
+                  <span className="status-chip">{formatType(tournament.type)}</span>
+                  {tournament.isWorldCup2026 && (
+                    <span className="status-chip bg-emerald-500/15 text-emerald-100 border-emerald-300/30">
+                      CDM 2026
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="mt-4 space-y-2 text-sm text-slate-200">
                 <p>

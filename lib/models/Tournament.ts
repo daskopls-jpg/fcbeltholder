@@ -34,6 +34,7 @@ export interface ITournament {
   teamsByPlayer: Record<string, string[]>;
   participants: string[];
   creatorData?: TournamentCreatorData;
+  isWorldCup2026?: boolean;
 }
 
 const TournamentSchema = new Schema<ITournament>({
@@ -42,6 +43,7 @@ const TournamentSchema = new Schema<ITournament>({
   winner: { type: String, default: '' },
   date: { type: String, required: true },
   participants: [{ type: String }],
+  isWorldCup2026: { type: Boolean, default: false },
   creatorData: {
     type: Schema.Types.Mixed,
     required: false,

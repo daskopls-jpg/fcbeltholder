@@ -76,7 +76,14 @@ export default async function TournamentDetailPage({
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="status-chip mb-2">Détail tournoi</p>
-            <h1 className="text-3xl md:text-5xl font-bold">{tournament.name}</h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl md:text-5xl font-bold">{tournament.name}</h1>
+              {tournament.isWorldCup2026 && (
+                <span className="status-chip bg-emerald-500/15 text-emerald-100 border-emerald-300/30">
+                  CDM 2026
+                </span>
+              )}
+            </div>
           </div>
           <Link href="/tournaments" className="outline-btn px-4 py-2 text-sm">
             Retour aux tournois

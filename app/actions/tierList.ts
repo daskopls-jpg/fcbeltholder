@@ -2,6 +2,8 @@
 
 import { connectDB } from '@/lib/mongodb';
 import { TierListModel } from '@/lib/models/TierList';
+import { DEFAULT_TIERS } from '@/lib/tiers';
+import { emptyWorldCupTiers, type TierListMode } from '@/lib/worldCup';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 
@@ -9,17 +11,6 @@ async function requireAuth() {
   const session = await auth();
   if (!session) throw new Error('Non autorisé');
 }
-
-const initialTeams = [
-  'Real Madrid', 'Barcelona', 'Manchester City', 'Liverpool', 'Chelsea',
-  'Bayern Munich', 'Borussia Dortmund', 'Paris Saint-Germain', 'Juventus', 'Inter Milan',
-];
-
-const defaultTiers: Record<string, string[]> = {
-  '1': [], '2': [], '3': [], '4': [],
-  '5': initialTeams,
-  '6': [], '7': [], '8': [], '9': [], '10': [],
-};
 
 function sanitizeTiers(tiers: Record<string, string[]>): Record<string, string[]> {
   const cleaned: Record<string, string[]> = {
@@ -42,22 +33,29 @@ function sanitizeTiers(tiers: Record<string, string[]>): Record<string, string[]
   return cleaned;
 }
 
-export async function getTierList(): Promise<Record<string, string[]>> {
+export async function getTierList(mode: TierListMode = 'club'): Promise<Record<string, string[]>> {
   try {
     await connectDB();
-    const doc = await TierListModel.findOne().lean();
-    if (!doc) return defaultTiers;
+    const query =
+      mode === 'club'
+        ? { $or: [{ mode: 'club' }, { mode: { $exists: false } }] }
+        : { mode };
+    const doc = await TierListModel.findOne(query).lean();
+    if (!doc) return mode === 'club' ? DEFAULT_TIERS : emptyWorldCupTiers();
     return sanitizeTiers(doc.tiers as Record<string, string[]>);
   } catch (error) {
     console.error('Failed to load tier list from MongoDB.', error);
-    return defaultTiers;
+    return mode === 'club' ? DEFAULT_TIERS : emptyWorldCupTiers();
   }
 }
 
-export async function saveTierList(tiers: Record<string, string[]>): Promise<void> {
+export async function saveTierList(
+  tiers: Record<string, string[]>,
+  mode: TierListMode = 'club'
+): Promise<void> {
   await requireAuth();
   await connectDB();
   const sanitized = sanitizeTiers(tiers);
-  await TierListModel.findOneAndUpdate({}, { tiers: sanitized }, { upsert: true });
+  await TierListModel.findOneAndUpdate({ mode }, { tiers: sanitized, mode }, { upsert: true });
   revalidatePath('/tier-list');
 }

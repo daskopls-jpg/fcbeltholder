@@ -5,6 +5,8 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useSession } from 'next-auth/react';
 import { saveTierList } from '../actions/tierList';
+import { getWorldCupTeamFlagUrl, emptyWorldCupTiers } from '@/lib/worldCup';
+import { useWorldCupStore } from '@/store/worldCupStore';
 
 const ItemTypes = {
   TEAM: 'team',
@@ -27,11 +29,13 @@ interface TeamItemProps {
   team: string;
   tier: number;
   logoUrl: string | null;
+  flagSrc?: string | null;
   isAdmin: boolean;
+  preferFlag?: boolean;
   onRemoveTeam: (team: string, tier: number) => void;
 }
 
-function TeamItem({ team, tier, logoUrl, isAdmin, onRemoveTeam }: TeamItemProps) {
+function TeamItem({ team, tier, logoUrl, flagSrc, isAdmin, preferFlag, onRemoveTeam }: TeamItemProps) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.TEAM,
     item: { team, tier },
@@ -54,11 +58,25 @@ function TeamItem({ team, tier, logoUrl, isAdmin, onRemoveTeam }: TeamItemProps)
         isDragging ? 'opacity-50 scale-[1.02]' : 'hover:bg-white/15'
       }`}
     >
-      {logoUrl ? (
+      {preferFlag && flagSrc ? (
+        <img
+          src={flagSrc}
+          alt={`${team} flag`}
+          className="h-6 w-6 rounded-full bg-white/10 object-cover"
+          loading="lazy"
+        />
+      ) : logoUrl ? (
         <img
           src={logoUrl}
           alt={`${team} logo`}
           className="h-6 w-6 rounded-full bg-white/90 object-contain p-0.5"
+          loading="lazy"
+        />
+      ) : flagSrc ? (
+        <img
+          src={flagSrc}
+          alt={`${team} flag`}
+          className="h-6 w-6 rounded-full bg-white/10 object-cover"
           loading="lazy"
         />
       ) : (
@@ -89,9 +107,10 @@ interface TierColumnProps {
   moveTeam: (team: string, fromTier: number, toTier: number) => void;
   removeTeam: (team: string, tier: number) => void;
   isAdmin: boolean;
+  preferFlag?: boolean;
 }
 
-function TierColumn({ tier, teams, teamLogos, moveTeam, removeTeam, isAdmin }: TierColumnProps) {
+function TierColumn({ tier, teams, teamLogos, moveTeam, removeTeam, isAdmin, preferFlag }: TierColumnProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: ItemTypes.TEAM,
     canDrop: () => isAdmin,
@@ -119,6 +138,8 @@ function TierColumn({ tier, teams, teamLogos, moveTeam, removeTeam, isAdmin }: T
           team={team}
           tier={tier}
           logoUrl={teamLogos[team] ?? null}
+          flagSrc={getWorldCupTeamFlagUrl(team)}
+          preferFlag={preferFlag}
           isAdmin={isAdmin}
           onRemoveTeam={removeTeam}
         />
@@ -139,8 +160,10 @@ interface TeamOption {
 export default function TierListClient({ initialTiers }: Props) {
   const { data: session } = useSession();
   const isAdmin = !!session;
+  const isWorldCup2026 = useWorldCupStore((state) => state.isWorldCup2026);
 
-  const [tiers, setTiers] = useState(initialTiers);
+  const [clubTiers, setClubTiers] = useState(initialTiers);
+  const [worldCupTiers, setWorldCupTiers] = useState<Record<string, string[]> | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [teamQuery, setTeamQuery] = useState('');
   const [teamOptions, setTeamOptions] = useState<TeamOption[]>([]);
@@ -148,6 +171,39 @@ export default function TierListClient({ initialTiers }: Props) {
   const [isSearchingTeams, setIsSearchingTeams] = useState(false);
   const [teamLogos, setTeamLogos] = useState<Record<string, string | null>>({});
   const [isPending, startTransition] = useTransition();
+
+  const currentTiers = isWorldCup2026
+    ? worldCupTiers ?? emptyWorldCupTiers()
+    : clubTiers;
+  const isEditable = isAdmin;
+
+  useEffect(() => {
+    if (!isWorldCup2026 || worldCupTiers !== null) return;
+
+    let cancelled = false;
+    const fetchWorldCupTiers = async () => {
+      try {
+        const response = await fetch('/api/tier-list?mode=worldCup2026');
+        if (!response.ok) return;
+        const payload = (await response.json()) as { tiers?: Record<string, string[]> };
+        if (cancelled) return;
+        if (payload?.tiers) {
+          setWorldCupTiers(payload.tiers);
+        } else {
+          setWorldCupTiers(emptyWorldCupTiers());
+        }
+      } catch {
+        if (!cancelled) {
+          setWorldCupTiers(emptyWorldCupTiers());
+        }
+      }
+    };
+
+    fetchWorldCupTiers();
+    return () => {
+      cancelled = true;
+    };
+  }, [isWorldCup2026, worldCupTiers]);
 
   const resetAddTeamModal = () => {
     setTeamQuery('');
@@ -159,7 +215,7 @@ export default function TierListClient({ initialTiers }: Props) {
   useEffect(() => {
     let cancelled = false;
 
-    const allTeams = Array.from(new Set(Object.values(tiers).flat()));
+    const allTeams = Array.from(new Set(Object.values(currentTiers).flat()));
     const missingTeams = allTeams.filter((team) => !(team in teamLogos));
     if (missingTeams.length === 0) return;
 
@@ -189,7 +245,7 @@ export default function TierListClient({ initialTiers }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [tiers, teamLogos]);
+  }, [currentTiers, teamLogos]);
 
   useEffect(() => {
     if (!showModal) return;
@@ -213,7 +269,7 @@ export default function TierListClient({ initialTiers }: Props) {
         }
 
         const payload = (await response.json()) as { teams?: TeamOption[] };
-        const existingTeams = new Set(Object.values(tiers).flat());
+        const existingTeams = new Set(Object.values(currentTiers).flat());
         const options = (payload.teams ?? []).filter((team) => !existingTeams.has(team.name));
 
         if (!cancelled) {
@@ -233,42 +289,68 @@ export default function TierListClient({ initialTiers }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [showModal, teamQuery, tiers, selectedTeamName]);
+  }, [showModal, teamQuery, currentTiers, selectedTeamName]);
+
+  const saveCurrentTiers = useCallback((nextTiers: Record<string, string[]>) => {
+    const mode = isWorldCup2026 ? 'worldCup2026' : 'club';
+    startTransition(() => saveTierList(nextTiers, mode));
+  }, [isWorldCup2026]);
+
+  const displayTiers = currentTiers;
+
+  const updateTiers = useCallback(
+    (updater: (current: Record<string, string[]>) => Record<string, string[]>) => {
+      if (!isEditable) return;
+
+      if (isWorldCup2026) {
+        const next = updater(worldCupTiers ?? emptyWorldCupTiers());
+        setWorldCupTiers(next);
+        saveCurrentTiers(next);
+      } else {
+        const next = updater(clubTiers);
+        setClubTiers(next);
+        saveCurrentTiers(next);
+      }
+    },
+    [isEditable, isWorldCup2026, clubTiers, worldCupTiers, saveCurrentTiers]
+  );
 
   const moveTeam = useCallback((team: string, fromTier: number, toTier: number) => {
-    if (!isAdmin) return;
-    const fromKey = String(fromTier);
-    const toKey = String(toTier);
-    const next = { ...tiers };
-    next[fromKey] = next[fromKey].filter((t) => t !== team);
-    next[toKey] = [...next[toKey], team];
-    setTiers(next);
-    startTransition(() => saveTierList(next));
-  }, [tiers, isAdmin]);
+    updateTiers((current) => {
+      const fromKey = String(fromTier);
+      const toKey = String(toTier);
+      const next = { ...current };
+      next[fromKey] = next[fromKey].filter((t) => t !== team);
+      next[toKey] = [...next[toKey], team];
+      return next;
+    });
+  }, [updateTiers]);
 
   const handleAddTeam = () => {
+    if (!isEditable) return;
     const name = selectedTeamName.trim();
     if (!name) return;
-    const allTeams = Object.values(tiers).flat();
+    const allTeams = Object.values(currentTiers).flat();
     if (allTeams.includes(name)) return;
-    const next = { ...tiers, '5': [...tiers['5'], name] };
-    setTiers(next);
-    startTransition(() => saveTierList(next));
+
+    updateTiers((current) => ({
+      ...current,
+      '5': [...current['5'], name],
+    }));
     resetAddTeamModal();
   };
 
   const removeTeam = useCallback((team: string, tier: number) => {
-    if (!isAdmin) return;
+    if (!isEditable) return;
 
-    const key = String(tier);
-    const next = {
-      ...tiers,
-      [key]: tiers[key].filter((candidate) => candidate !== team),
-    };
-
-    setTiers(next);
-    startTransition(() => saveTierList(next));
-  }, [tiers, isAdmin]);
+    updateTiers((current) => {
+      const key = String(tier);
+      return {
+        ...current,
+        [key]: current[key].filter((candidate) => candidate !== team),
+      };
+    });
+  }, [isEditable, updateTiers]);
 
   return (
     <main className="px-4 pb-10 pt-8 md:pt-10">
@@ -280,7 +362,8 @@ export default function TierListClient({ initialTiers }: Props) {
 
           <div className="flex items-center gap-3">
             {isPending && <span className="status-chip">Enregistrement...</span>}
-          {isAdmin && (
+            {isWorldCup2026 && <span className="status-chip">Mode CDM 2026 activé</span>}
+          {isEditable && (
             <button
               onClick={() => setShowModal(true)}
                 className="brand-btn px-4 py-2 text-sm"
@@ -368,7 +451,7 @@ export default function TierListClient({ initialTiers }: Props) {
         <DndProvider backend={HTML5Backend}>
           <div className="glass-panel rounded-2xl p-3 md:p-4 overflow-hidden">
             <div className="grid grid-cols-1 gap-3">
-            {Object.entries(tiers).sort(([a], [b]) => parseInt(a) - parseInt(b)).map(([tier, teams]) => (
+            {Object.entries(displayTiers).sort(([a], [b]) => parseInt(a) - parseInt(b)).map(([tier, teams]) => (
               <TierColumn
                 key={tier}
                 tier={parseInt(tier)}
@@ -376,7 +459,8 @@ export default function TierListClient({ initialTiers }: Props) {
                 teamLogos={teamLogos}
                 moveTeam={moveTeam}
                 removeTeam={removeTeam}
-                isAdmin={isAdmin}
+                isAdmin={isEditable}
+                preferFlag={isWorldCup2026}
               />
             ))}
             </div>

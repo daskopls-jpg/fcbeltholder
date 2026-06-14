@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
-    "seed": "node scripts/seed-teams.mjs"
+    "seed": "node scripts/run-seed.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
